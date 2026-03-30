@@ -12,7 +12,14 @@
       min-height: 100vh;
       background: linear-gradient(135deg, #0D0D0D 0%, #1a1a1a 50%, #0D0D0D 100%);
       color: #F2F2F2;
+      transition: background 1.5s ease;
     }
+
+    body.dawn { background: linear-gradient(135deg, #1a1520 0%, #2d1f3d 30%, #3d2a4a 60%, #1a1520 100%); }
+    body.morning { background: linear-gradient(135deg, #0f1922 0%, #1a2d3d 30%, #1f3545 60%, #0f1922 100%); }
+    body.afternoon { background: linear-gradient(135deg, #0d1a24 0%, #153040 30%, #1a3850 60%, #0d1a24 100%); }
+    body.evening { background: linear-gradient(135deg, #1a1018 0%, #2d1a25 30%, #3d2530 60%, #1a1018 100%); }
+    body.night { background: linear-gradient(135deg, #0D0D0D 0%, #0d1b2a 30%, #1b263b 60%, #0D0D0D 100%); }
 
     .container {
       max-width: 1000px;
@@ -49,10 +56,18 @@
       background: rgba(255,255,255,0.05);
       border-radius: 14px;
       padding: 18px;
-      border: 1px solid rgba(186, 151, 49, 0.2);
+      border: 1px solid var(--accent-glow, rgba(186, 151, 49, 0.2));
       min-height: 160px;
       display: flex;
       flex-direction: column;
+      transition: border-color 1.5s ease, box-shadow 1.5s ease;
+    }
+
+    body.dawn .card { --accent-glow: rgba(255, 179, 71, 0.25); box-shadow: 0 0 20px rgba(244, 164, 96, 0.05); }
+    body.morning .card { --accent-glow: rgba(135, 206, 235, 0.2); box-shadow: 0 0 20px rgba(135, 206, 235, 0.05); }
+    body.afternoon .card { --accent-glow: rgba(74, 144, 217, 0.2); box-shadow: 0 0 20px rgba(74, 144, 217, 0.05); }
+    body.evening .card { --accent-glow: rgba(255, 140, 66, 0.25); box-shadow: 0 0 20px rgba(255, 140, 66, 0.08); }
+    body.night .card { --accent-glow: rgba(186, 151, 49, 0.2); box-shadow: 0 0 20px rgba(27, 38, 59, 0.1); }
     }
 
     .card-title {
@@ -309,6 +324,12 @@
 
       loc.textContent = data.location;
       const sky = data.sky?.colors ? skyGradient(data.sky.colors) : 'linear-gradient(#2c3e50, #4a5568)';
+
+      // Apply time-based body color
+      const period = data.sky?.colors?.period || 'night';
+      const bodyClass = period === 'early_morning' ? 'dawn' : period;
+      document.body.className = bodyClass;
+
       const isToday = data.holidays?.next?.days_until === 0;
       const p = data.air_quality?.pollutants;
       const moon = data.sky?.moon;
@@ -442,8 +463,22 @@
       footer.textContent = `Updated ${new Date(data.timestamp).toLocaleTimeString()}`;
     }
 
+    // Local clock update (no API call)
+    function updateLocalClock() {
+      const timeEl = document.querySelector('.hero-card .time');
+      if (timeEl) {
+        const now = new Date();
+        const hours = now.getHours();
+        const mins = now.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        timeEl.textContent = `${h12}:${mins} ${ampm}`;
+      }
+    }
+
     fetchWorldState().then(render);
-    setInterval(async () => { const d = await fetchWorldState(); if (d) render(d); }, 5 * 60 * 1000);
+    setInterval(updateLocalClock, 60 * 1000); // Clock every minute (local)
+    setInterval(async () => { const d = await fetchWorldState(); if (d) render(d); }, 30 * 60 * 1000); // Full refresh every 30 min
   </script>
 </body>
 </html>
