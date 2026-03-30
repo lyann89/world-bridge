@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Bridge</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0D0D0D 0%, #1a1a1a 50%, #0D0D0D 100%);
+      color: #F2F2F2;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px 0 30px;
+    }
+
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 400;
+      letter-spacing: 6px;
+      color: #BA9731;
+    }
+
+    .header .location {
+      font-size: 0.85rem;
+      color: #DACE84;
+      margin-top: 4px;
+      letter-spacing: 2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid rgba(186, 151, 49, 0.2);
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #BA9731;
+      margin-bottom: 10px;
+    }
+
+    /* HERO CARD - Time + Day Cycle combined */
+    .hero-card {
+      grid-column: span 3;
+      min-height: 200px;
+      position: relative;
+      overflow: hidden;
+      padding: 24px 30px;
+    }
+
+    .hero-card .sky-gradient {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      opacity: 0.6;
+      border-radius: 13px;
+    }
+
+    .hero-card .content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .hero-card .time-section {
+      text-align: center;
+      padding-bottom: 20px;
+    }
+
+    .hero-card .time {
+      font-size: 4.5rem;
+      font-weight: 200;
+      letter-spacing: 4px;
+    }
+
+    .hero-card .date {
+      font-size: 1.1rem;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .hero-card .period-badge {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 18px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: #DACE84;
+      letter-spacing: 1px;
+    }
+
+    .hero-card .cycle-section {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hero-card .cycle-info {
+      text-align: left;
+    }
+
+    .hero-card .cycle-current {
+      font-size: 1.3rem;
+      color: #DACE84;
+    }
+
+    .hero-card .cycle-detail {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    .hero-card .cycle-periods {
+      display: flex;
+      gap: 8px;
+    }
+
+    .hero-card .cycle-period {
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px;
+      font-size: 0.7rem;
+      opacity: 0.5;
+      transition: all 0.3s;
+    }
+
+    .hero-card .cycle-period.active {
+      background: rgba(186, 151, 49, 0.4);
+      border: 1px solid #BA9731;
+      opacity: 1;
+      color: #DACE84;
+    }
+
+    /* Weather */
+    .weather-card { justify-content: space-between; }
+    .weather-card .temp { font-size: 2.5rem; font-weight: 200; }
+    .weather-card .feels { font-size: 0.8rem; opacity: 0.6; }
+    .weather-card .condition { font-size: 0.95rem; color: #DACE84; margin-top: auto; }
+    .weather-card .humidity { font-size: 0.75rem; opacity: 0.5; }
+
+    /* Air */
+    .air-card .aqi-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .air-card .aqi-badge {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 1.1rem; color: #0D0D0D;
+    }
+    .air-card .aqi-level { font-size: 1rem; }
+    .air-card .aqi-desc { font-size: 0.7rem; opacity: 0.6; }
+    .air-card .pollutants {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;
+      margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .air-card .pollutant { display: flex; justify-content: space-between; font-size: 0.65rem; }
+    .air-card .pollutant-name { opacity: 0.5; }
+    .air-card .pollutant-value { color: #DACE84; }
+
+    /* Moon with all phases */
+    .moon-card .moon-main { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .moon-card .moon-emoji { font-size: 2.5rem; }
+    .moon-card .moon-phase { font-size: 1rem; }
+    .moon-card .moon-detail { font-size: 0.75rem; opacity: 0.6; }
+    .moon-card .all-phases {
+      display: flex; justify-content: space-between;
+      margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .moon-card .phase-item { font-size: 1.2rem; opacity: 0.3; transition: all 0.3s; }
+    .moon-card .phase-item.active { opacity: 1; transform: scale(1.3); }
+
+    /* Year progress */
+    .year-card .year-main { font-size: 2rem; font-weight: 200; color: #DACE84; }
+    .year-card .year-sub { font-size: 0.8rem; opacity: 0.7; margin-top: 4px; }
+    .year-card .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;
+      margin-top: auto; overflow: hidden;
+    }
+    .year-card .progress-fill { height: 100%; background: #BA9731; border-radius: 3px; }
+    .year-card .year-stats {
+      display: flex; justify-content: space-between;
+      margin-top: 8px; font-size: 0.7rem; opacity: 0.6;
+    }
+
+    /* Holiday */
+    .holiday-card .holiday-name { font-size: 1rem; color: #DACE84; }
+    .holiday-card .holiday-date { font-size: 0.75rem; opacity: 0.6; margin-top: 4px; }
+    .holiday-card .holiday-type {
+      display: inline-block; margin-top: 6px; padding: 2px 6px;
+      background: rgba(186, 151, 49, 0.2); border-radius: 6px;
+      font-size: 0.55rem; text-transform: uppercase; color: #BA9731;
+    }
+    .holiday-card.today { border-color: #BA9731; background: rgba(186, 151, 49, 0.1); }
+    .mini-calendar {
+      margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .mini-calendar .cal-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.65rem; padding: 3px 0;
+    }
+    .mini-calendar .cal-name { opacity: 0.7; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mini-calendar .cal-date { opacity: 0.5; }
+    .mini-calendar .cal-row.special { color: #DACE84; }
+
+    /* Wedding */
+    .wedding-card {
+      background: linear-gradient(135deg, rgba(186,151,49,0.15), rgba(218,206,132,0.1));
+      border-color: rgba(186, 151, 49, 0.4);
+      text-align: center; justify-content: center;
+    }
+    .wedding-card .days { font-size: 3rem; font-weight: 200; color: #DACE84; }
+    .wedding-card .label { font-size: 0.9rem; color: #BA9731; }
+    .wedding-card .date-label { font-size: 0.7rem; opacity: 0.5; margin-top: 6px; }
+
+    /* News */
+    .news-card { grid-column: span 3; min-height: auto; padding: 18px 20px; }
+    .news-card .news-columns { display: flex; gap: 24px; }
+    .news-card .news-column { flex: 1; }
+    .news-card .news-column-title {
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px;
+      color: #BA9731; margin-bottom: 10px; padding-bottom: 6px;
+      border-bottom: 1px solid rgba(186, 151, 49, 0.3);
+    }
+    .news-card .news-item { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .news-card .news-item:last-child { border-bottom: none; }
+    .news-card .news-source { font-size: 0.55rem; color: #BA9731; text-transform: uppercase; }
+    .news-card .news-title { font-size: 0.8rem; opacity: 0.85; line-height: 1.35; margin-top: 2px; }
+    .news-card .news-title a { color: inherit; text-decoration: none; }
+    .news-card .news-title a:hover { color: #DACE84; }
+
+    .footer { text-align: center; padding: 20px; font-size: 0.65rem; opacity: 0.3; }
+    .loading { text-align: center; padding: 80px; color: #BA9731; grid-column: span 3; }
+
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-card, .news-card { grid-column: span 2; }
+      .hero-card .time { font-size: 3rem; }
+      .hero-card .cycle-section { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .hero-card .cycle-periods { flex-wrap: wrap; }
+      .news-card .news-columns { flex-direction: column; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>WORLD BRIDGE</h1>
+      <div class="location" id="location">Loading...</div>
+    </div>
+    <div class="grid" id="app"><div class="loading">Loading world state...</div></div>
+    <div class="footer" id="footer"></div>
+  </div>
+
+  <script>
+    const SUNDIAL_URL = 'https://sundial-mcp.nxxxd7t5d9.workers.dev/world';
+
+    async function fetchWorldState() {
+      try {
+        const r = await fetch(SUNDIAL_URL);
+        return r.ok ? await r.json() : null;
+      } catch { return null; }
+    }
+
+    function skyGradient(c) {
+      return c.sky_mid ? `linear-gradient(to bottom, ${c.sky_top}, ${c.sky_mid}, ${c.sky_lower}, ${c.sky_bottom})` :
+        `linear-gradient(to bottom, ${c.sky_top}, ${c.sky_bottom})`;
+    }
+
+    function fmtDate(d) {
+      return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function truncate(s, n = 70) { return s.length <= n ? s : s.substring(0, n).trim() + '...'; }
+
+    function render(data) {
+      const app = document.getElementById('app');
+      const loc = document.getElementById('location');
+      const footer = document.getElementById('footer');
+
+      if (!data) { app.innerHTML = '<div class="loading">Could not load. Refresh.</div>'; return; }
+
+      loc.textContent = data.location;
+      const sky = data.sky?.colors ? skyGradient(data.sky.colors) : 'linear-gradient(#2c3e50, #4a5568)';
+      const isToday = data.holidays?.next?.days_until === 0;
+      const p = data.air_quality?.pollutants;
+      const moon = data.sky?.moon;
+      const year = data.year;
+      const trans = data.transitions;
+
+      app.innerHTML = `
+        <!-- HERO: Time + Day Cycle -->
+        <div class="card hero-card">
+          <div class="sky-gradient" style="background:${sky}"></div>
+          <div class="content">
+            <div class="time-section">
+              <div class="time">${data.time.local_time}</div>
+              <div class="date">${data.time.date}</div>
+              <span class="period-badge">${data.sky?.colors?.description || ''}</span>
+            </div>
+            ${trans ? `
+            <div class="cycle-section">
+              <div class="cycle-info">
+                <div class="cycle-current">${trans.current}</div>
+                <div class="cycle-detail">${trans.time_in_period} in · ${trans.time_until_next} until ${trans.next_period}</div>
+              </div>
+              <div class="cycle-periods">
+                ${trans.periods.map(p => `<div class="cycle-period ${p.active ? 'active' : ''}">${p.name}</div>`).join('')}
+              </div>
+            </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Weather -->
+        ${data.weather ? `
+        <div class="card weather-card">
+          <div class="card-title">Weather</div>
+          <div><div class="temp">${data.weather.temperature.current}°</div>
+          <div class="feels">Feels ${data.weather.temperature.feels_like}°</div></div>
+          <div><div class="condition">${data.weather.conditions.description}</div>
+          <div class="humidity">${data.weather.humidity}% humidity</div></div>
+        </div>` : ''}
+
+        <!-- Air -->
+        ${data.air_quality ? `
+        <div class="card air-card">
+          <div class="card-title">Air Quality</div>
+          <div class="aqi-row">
+            <div class="aqi-badge" style="background:${data.air_quality.aqi.color}">${data.air_quality.aqi.index}</div>
+            <div><div class="aqi-level">${data.air_quality.aqi.level}</div>
+            <div class="aqi-desc">${data.air_quality.aqi.description}</div></div>
+          </div>
+          ${p ? `<div class="pollutants">
+            <div class="pollutant"><span class="pollutant-name">PM2.5</span><span class="pollutant-value">${p.pm2_5?.toFixed(1)||'-'}</span></div>
+            <div class="pollutant"><span class="pollutant-name">PM10</span><span class="pollutant-value">${p.pm10?.toFixed(1)||'-'}</span></div>
+            <div class="pollutant"><span class="pollutant-name">O3</span><span class="pollutant-value">${p.o3?.toFixed(1)||'-'}</span></div>
+            <div class="pollutant"><span class="pollutant-name">NO2</span><span class="pollutant-value">${p.no2?.toFixed(1)||'-'}</span></div>
+          </div>` : ''}
+        </div>` : ''}
+
+        <!-- Moon -->
+        <div class="card moon-card">
+          <div class="card-title">Moon</div>
+          <div class="moon-main">
+            <div class="moon-emoji">${moon?.emoji || '🌙'}</div>
+            <div><div class="moon-phase">${moon?.phase || ''}</div>
+            <div class="moon-detail">${moon?.illumination || 0}% lit · ${moon?.days_until_next || 0}d to ${moon?.next_phase || ''}</div></div>
+          </div>
+          ${moon?.all_phases ? `
+          <div class="all-phases">
+            ${moon.all_phases.map((ph, i) => `<span class="phase-item ${i === moon.current_index ? 'active' : ''}">${ph.emoji}</span>`).join('')}
+          </div>` : ''}
+        </div>
+
+        <!-- Year Progress -->
+        ${year ? `
+        <div class="card year-card">
+          <div class="card-title">Year ${year.year}</div>
+          <div class="year-main">Day ${year.day_of_year}</div>
+          <div class="year-sub">Week ${year.week_number} · ${year.percent_complete}% complete</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${year.percent_complete}%"></div></div>
+          <div class="year-stats"><span>${year.day_of_year} days in</span><span>${year.days_left} days left</span></div>
+        </div>` : ''}
+
+        <!-- Holiday -->
+        ${data.holidays?.next ? `
+        <div class="card holiday-card ${isToday ? 'today' : ''}">
+          <div class="card-title">${isToday ? 'Today' : 'Next Holiday'}</div>
+          <div class="holiday-name">${data.holidays.next.name}</div>
+          <div class="holiday-date">${isToday ? 'Happy Holiday!' : data.holidays.next.days_until + ' days'}</div>
+          <span class="holiday-type">${data.holidays.next.type}</span>
+          ${data.holidays.upcoming?.length > 1 ? `
+          <div class="mini-calendar">
+            ${data.holidays.upcoming.slice(1, 4).map(h => `
+              <div class="cal-row ${h.special ? 'special' : ''}"><span class="cal-name">${h.name}</span><span class="cal-date">${fmtDate(h.date)}</span></div>
+            `).join('')}
+          </div>` : ''}
+        </div>` : ''}
+
+        <!-- Wedding -->
+        <div class="card wedding-card">
+          <div class="card-title">Wedding</div>
+          <div class="days">${data.wedding.married ? data.wedding.days_since : data.wedding.days_until}</div>
+          <div class="label">${data.wedding.married ? 'days married' : 'days to go'}</div>
+          <div class="date-label">April 19, 2026</div>
+        </div>
+
+        <!-- News -->
+        ${data.news ? `
+        <div class="card news-card">
+          <div class="card-title">News</div>
+          <div class="news-columns">
+            <div class="news-column">
+              <div class="news-column-title">Malaysia</div>
+              ${(data.news.malaysia || []).map(n => `
+                <div class="news-item">
+                  <div class="news-source">${n.source}</div>
+                  <div class="news-title"><a href="${n.link}" target="_blank">${truncate(n.title)}</a></div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="news-column">
+              <div class="news-column-title">World</div>
+              ${(data.news.world || []).map(n => `
+                <div class="news-item">
+                  <div class="news-source">${n.source}</div>
+                  <div class="news-title"><a href="${n.link}" target="_blank">${truncate(n.title)}</a></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>` : ''}
+      `;
+
+      footer.textContent = `Updated ${new Date(data.timestamp).toLocaleTimeString()}`;
+    }
+
+    fetchWorldState().then(render);
+    setInterval(async () => { const d = await fetchWorldState(); if (d) render(d); }, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
