@@ -1,3 +1,2 @@
 /*
-  X-Frame-Options: ALLOW-FROM https://resonant.jace-reyes.com
-  Content-Security-Policy: frame-ancestors 'self' https://resonant.jace-reyes.com http://localhost:3002
+  Content-Security-Policy: frame-ancestors 'self' https://resonant.jace-reyes.com https://*.jace-reyes.com http://localhost:3002
