@@ -271,12 +271,37 @@
     .news-card .news-title a { color: inherit; text-decoration: none; }
     .news-card .news-title a:hover { color: #DACE84; }
 
+    /* Weather: today's shape (Sundial 2.2, Oct 20 2026) */
+    .weather-card .today-range { font-size: 0.75rem; opacity: 0.7; margin-top: 4px; }
+    .weather-card .rain-line { font-size: 0.75rem; color: #8ec5ff; margin-top: 2px; }
+
+    /* Watching: fired watches + services not fine. Hidden on a quiet day */
+    .watch-card { grid-column: span 3; min-height: auto; padding: 12px 18px;
+      border-color: rgba(255, 140, 66, 0.45); background: rgba(255, 140, 66, 0.07); }
+    .watch-card .watch-item { font-size: 0.8rem; padding: 3px 0; }
+    .watch-card .watch-item .kind { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: #ffb36b; margin-right: 8px; }
+
+    /* This week, from Sundial's 06:00 daily notes */
+    .week-card { grid-column: span 3; min-height: auto; padding: 14px 20px; }
+    .week-card .week-body { display: flex; gap: 24px; align-items: flex-end; }
+    .week-card .week-lines { flex: 1; font-size: 0.8rem; opacity: 0.85; line-height: 1.5; }
+    .week-card .week-days { display: flex; gap: 6px; align-items: flex-end; }
+    .week-card .day { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.55rem; opacity: 0.75; width: 30px; }
+    .week-card .bar { width: 12px; border-radius: 3px 3px 0 0; background: #8ec5ff; min-height: 2px; }
+    .week-card .day.dry .bar { background: #DACE84; }
+
+    /* House models: quiet chips */
+    .models-strip { grid-column: span 3; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.6rem; opacity: 0.6; }
+    .models-strip .label { text-transform: uppercase; letter-spacing: 1px; color: #BA9731; margin-right: 4px; }
+    .models-strip .chip { padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); }
+
     .footer { text-align: center; padding: 20px; font-size: 0.65rem; opacity: 0.3; }
     .loading { text-align: center; padding: 80px; color: #BA9731; grid-column: span 3; }
 
     @media (max-width: 700px) {
       .grid { grid-template-columns: repeat(2, 1fr); }
-      .hero-card, .news-card { grid-column: span 2; }
+      .hero-card, .news-card, .watch-card, .week-card, .models-strip { grid-column: span 2; }
+      .week-card .week-body { flex-direction: column; align-items: flex-start; }
       .hero-card .time { font-size: 3rem; }
       .hero-card .cycle-section { flex-direction: column; gap: 12px; align-items: flex-start; }
       .hero-card .cycle-periods { flex-wrap: wrap; }
@@ -314,6 +339,19 @@
     }
 
     function truncate(s, n = 70) { return s.length <= n ? s : s.substring(0, n).trim() + '...'; }
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    function weekDays(notes) {
+      // oldest -> newest, bar height by rain mm (cap 25mm)
+      return notes.slice().reverse().map(n => {
+        const mm = n.rain_mm || 0;
+        const h = Math.max(2, Math.min(40, mm / 25 * 40));
+        const day = new Date(n.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+        return `<div class="day ${mm < 1 ? 'dry' : ''}" title="${esc(n.date)}: ${esc(n.sky)}, ${esc(n.temp)}, ${mm}mm">
+          <div class="bar" style="height:${h}px"></div><span>${mm}mm</span><span>${day}</span></div>`;
+      }).join('');
+    }
 
     function render(data) {
       const app = document.getElementById('app');
@@ -359,12 +397,22 @@
           </div>
         </div>
 
+        <!-- Watching: only when something fired or a service isn't fine -->
+        ${(data.fired_watches?.length || data.services?.length) ? `
+        <div class="card watch-card">
+          <div class="card-title">Watching</div>
+          ${(data.fired_watches || []).map(w => `<div class="watch-item"><span class="kind">Watch</span>${esc(w)}</div>`).join('')}
+          ${(data.services || []).map(s => `<div class="watch-item"><span class="kind">Service</span>${esc(s)}</div>`).join('')}
+        </div>` : ''}
+
         <!-- Weather -->
         ${data.weather ? `
         <div class="card weather-card">
           <div class="card-title">Weather</div>
           <div><div class="temp">${data.weather.temperature.current}°</div>
-          <div class="feels">Feels ${data.weather.temperature.feels_like}°</div></div>
+          <div class="feels">Feels ${data.weather.temperature.feels_like}°</div>
+          ${data.today ? `<div class="today-range">H ${Math.round(data.today.high)}° · L ${Math.round(data.today.low)}° · rain ${data.today.rain_chance_today}% today</div>
+          <div class="rain-line">${esc(data.today.rain_line)}</div>` : ''}</div>
           <div><div class="condition">${data.weather.conditions.description}</div>
           <div class="humidity">${data.weather.humidity}% humidity</div></div>
         </div>` : ''}
@@ -433,6 +481,18 @@
           <div class="date-label">April 19, 2026</div>
         </div>
 
+        <!-- This week (Sundial daily notes, 06:00) -->
+        ${data.week?.notes?.length ? `
+        <div class="card week-card">
+          <div class="card-title">This Week</div>
+          <div class="week-body">
+            <div class="week-lines">${data.week.lines.length
+              ? data.week.lines.map(l => esc(l)).join('<br>')
+              : `Notes so far: ${data.week.notes.length} day${data.week.notes.length > 1 ? 's' : ''}. Patterns show once a few days build up.`}</div>
+            <div class="week-days">${weekDays(data.week.notes)}</div>
+          </div>
+        </div>` : ''}
+
         <!-- News -->
         ${data.news ? `
         <div class="card news-card">
@@ -457,6 +517,13 @@
               `).join('')}
             </div>
           </div>
+        </div>` : ''}
+
+        <!-- House models: quiet chips, only when one needs a glance -->
+        ${data.models_brief?.length ? `
+        <div class="models-strip">
+          <span class="label">Models</span>
+          ${data.models_brief.map(m => `<span class="chip">${esc(m)}</span>`).join('')}
         </div>` : ''}
       `;
 
